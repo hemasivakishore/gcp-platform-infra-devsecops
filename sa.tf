@@ -6,7 +6,7 @@ resource "google_service_account" "sa" {
 
 # Provide IAM Role to the Service Account
 resource "google_project_iam_member" "sa_role_binding" {
-  project = "project-1e2da3fc-bb97-4b70-9c0"
+  project = var.project_id
   role    = "roles/viewer" #grants the viewer role
   member  = "serviceAccount:${google_service_account.sa.email}"
 }
