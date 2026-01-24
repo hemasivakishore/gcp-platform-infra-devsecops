@@ -13,8 +13,8 @@ terraform {
 
 provider "google" {
   # configuration options
-  project     = "project-1e2da3fc-bb97-4b70-9c0"
-  region      = "us-east1"
+  project     = var.project_id
+  region      = var.region
   credentials = file("C:/Users/VHS Kishore/Downloads/sa.json")
 }
 
