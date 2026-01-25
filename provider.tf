@@ -15,7 +15,6 @@ provider "google" {
   # configuration options
   project     = var.project_id
   region      = var.region
-  credentials = file("C:/Users/VHS Kishore/Downloads/sa.json")
 }
 
 provider "local" {
