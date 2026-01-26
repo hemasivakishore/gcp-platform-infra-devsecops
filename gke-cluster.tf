@@ -8,6 +8,8 @@ resource "google_container_cluster" "primary" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
+  deletion_protection = false
+
   #################################################
   # Cluster Labels (Asset Management)
   #################################################
@@ -19,7 +21,7 @@ resource "google_container_cluster" "primary" {
 
   master_authorized_networks_config {
     cidr_blocks {
-      cidr_block = "10.0.0.0/16"
+      cidr_block   = "10.0.0.0/16"
       display_name = "internal-vpc"
     }
   }
@@ -41,7 +43,7 @@ resource "google_container_cluster" "primary" {
   ip_allocation_policy {}
 
   network_policy {
-    enabled= true
+    enabled = true
   }
 
   #################################################
@@ -100,7 +102,7 @@ resource "google_container_node_pool" "primary_nodes" {
     }
 
     shielded_instance_config {
-      enable_secure_boot         = true
+      enable_secure_boot          = true
       enable_integrity_monitoring = true
     }
 
