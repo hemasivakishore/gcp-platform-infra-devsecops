@@ -37,3 +37,8 @@ variable "firewall_internal_name" {
   type    = string
   default = "gke-allow-internal"
 }
+
+variable "cluster-name" {
+  type    = string
+  default = "prod-gke-cluster"
+}
