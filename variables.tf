@@ -34,6 +34,6 @@ variable "router-name" {
 }
 
 variable "firewall_internal_name" {
-  type = string
+  type    = string
   default = "gke-allow-internal"
 }
