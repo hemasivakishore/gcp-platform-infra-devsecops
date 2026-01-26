@@ -1,7 +1,8 @@
 resource "google_container_cluster" "primary" {
   name     = var.cluster-name
-  location = var.region
+  location = var.cluster-region
 
+  # enable_autopilot = false
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet-1.name
 
@@ -62,15 +63,22 @@ resource "google_container_cluster" "primary" {
   #################################################
   master_auth {
     client_certificate_config {
-      issue_client_certificate = flase
+      issue_client_certificate = false
     }
+  }
+
+  #################################################
+  # Master Auth (Disable Basic Auth & Client Cert)
+  #################################################
+  workload_identity_config {
+    workload_pool = "${var.project_id}.svc.id.goog"
   }
 }
 
 resource "google_container_node_pool" "primary_nodes" {
   name     = var.nodes-name
   cluster  = google_container_cluster.primary.name
-  location = var.subnet_1_region
+  location = google_container_cluster.primary.location
 
   node_count = 2
 
@@ -85,7 +93,7 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   node_config {
-    machine_type = "e2-standard-4"
+    machine_type = "e2-medium"
     disk_size_gb = 20
     disk_type    = "pd-standard"
 
@@ -108,6 +116,7 @@ resource "google_container_node_pool" "primary_nodes" {
 
     labels = {
       environment = "production"
+      temp        = "initial-pool"
     }
 
     tags = ["gke-node"]

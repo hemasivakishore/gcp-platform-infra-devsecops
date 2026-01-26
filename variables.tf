@@ -5,7 +5,12 @@ variable "project_id" {
 
 variable "region" {
   type    = string
-  default = "us-east1"
+  default = "us-east1-b"
+}
+
+variable "cluster-region" {
+  type    = string
+  default = "us-east1-b"
 }
 
 variable "vpc_name" {
