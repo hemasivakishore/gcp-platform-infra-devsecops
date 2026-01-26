@@ -17,6 +17,13 @@ resource "google_container_cluster" "primary" {
     project     = "gcp-platform"
   }
 
+  master_authorized_networks_config {
+    cidr_blocks {
+      cidr_block = "10.0.0.0/16"
+      display_name = "internal-vpc"
+    }
+  }
+
   #################################################
   # Private Cluster (No Public Control Plane)
   #################################################
@@ -32,6 +39,10 @@ resource "google_container_cluster" "primary" {
   networking_mode = "VPC_NATIVE"
 
   ip_allocation_policy {}
+
+  network_policy {
+    enabled= true
+  }
 
   #################################################
   # Logging & Monitoring
@@ -49,7 +60,7 @@ resource "google_container_cluster" "primary" {
   #################################################
   master_auth {
     client_certificate_config {
-      issue_client_certificate = true
+      issue_client_certificate = flase
     }
   }
 }
@@ -83,6 +94,10 @@ resource "google_container_node_pool" "primary_nodes" {
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
+
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
 
     shielded_instance_config {
       enable_secure_boot         = true
