@@ -1,64 +1,55 @@
 resource "google_container_cluster" "primary" {
-  name                = var.cluster-name
-  location            = var.region
-  network             = google_compute_network.vpc.name
-  subnetwork          = google_compute_subnetwork.subnet-1.name
-  deletion_protection = false
+  name     = var.cluster-name
+  location = var.region
+
+  network    = google_compute_network.vpc.name
+  subnetwork = google_compute_subnetwork.subnet-1.name
 
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  #Networking
+  #################################################
+  # Cluster Labels (Asset Management)
+  #################################################
+  resource_labels = {
+    environment = "production"
+    owner       = "platform-team"
+    project     = "gcp-platform"
+  }
+
+  #################################################
+  # Private Cluster (No Public Control Plane)
+  #################################################
+  private_cluster_config {
+    enable_private_nodes    = true
+    enable_private_endpoint = true
+    master_ipv4_cidr_block  = "172.16.0.0/28"
+  }
+
+  #################################################
+  # Networking & Security Defaults
+  #################################################
   networking_mode = "VPC_NATIVE"
 
   ip_allocation_policy {}
 
-  private_cluster_config {
-    enable_private_nodes    = true
-    enable_private_endpoint = false
-    master_ipv4_cidr_block  = "172.16.0.0/28"
-  }
-
-  master_authorized_networks_config {
-    cidr_blocks {
-      cidr_block   = "0.0.0.0/0"
-      display_name = "temporary-open"
-    }
-  }
-
-  # Security
-  enable_shielded_nodes = true
-
-  workload_identity_config {
-    workload_pool = "${var.project_id}.svc.id.goog"
-  }
-
-  release_channel {
-    channel = "REGULAR"
-  }
-
-  # Logging and Monitoring
+  #################################################
+  # Logging & Monitoring
+  #################################################
   logging_service    = "logging.googleapis.com/kubernetes"
   monitoring_service = "monitoring.googleapis.com/kubernetes"
 
-  # Addons
-  addons_config {
-    http_load_balancing {
-      disabled = false
-    }
+  #################################################
+  # Shielded Nodes
+  #################################################
+  enable_shielded_nodes = true
 
-    horizontal_pod_autoscaling {
-      disabled = false
+  #################################################
+  # Master Auth (Disable Basic Auth & Client Cert)
+  #################################################
+  master_auth {
+    client_certificate_config {
+      issue_client_certificate = false
     }
-
-    network_policy_config {
-      disabled = false
-    }
-  }
-
-  # Network Policy
-  network_policy {
-    enabled  = true
-    provider = "CALICO"
   }
 }
