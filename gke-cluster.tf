@@ -49,7 +49,7 @@ resource "google_container_cluster" "primary" {
   #################################################
   master_auth {
     client_certificate_config {
-      issue_client_certificate = false
+      issue_client_certificate = true
     }
   }
 }
