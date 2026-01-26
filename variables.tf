@@ -27,3 +27,13 @@ variable "subnet_1_region" {
   type    = string
   default = "us-east1"
 }
+
+variable "cloud_route_name" {
+  type    = string
+  default = "gcp-github-actions-router"
+}
+
+variable "router-name" {
+  type    = string
+  default = "gke-route"
+}
