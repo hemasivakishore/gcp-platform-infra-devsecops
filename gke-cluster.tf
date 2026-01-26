@@ -1,8 +1,9 @@
 resource "google_container_cluster" "primary" {
-  name       = var.cluster-name
-  location   = var.region
-  network    = google_compute_network.vpc.name
-  subnetwork = google_compute_subnetwork.subnet-1.name
+  name                = var.cluster-name
+  location            = var.region
+  network             = google_compute_network.vpc.name
+  subnetwork          = google_compute_subnetwork.subnet-1.name
+  deletion_protection = false
 
   remove_default_node_pool = true
   initial_node_count       = 1
