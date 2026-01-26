@@ -57,7 +57,7 @@ resource "google_container_cluster" "primary" {
 resource "google_container_node_pool" "primary_nodes" {
   name     = var.nodes-name
   cluster  = google_container_cluster.primary.name
-  location = google_container_cluster.primary.region
+  location = var.subnet_1_region
 
   node_count = 2
 
