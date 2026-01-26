@@ -42,3 +42,9 @@ variable "cluster-name" {
   type    = string
   default = "prod-gke-cluster"
 }
+
+variable "nodes-name" {
+  type    = string
+  default = "prod-node-pool"
+}
+
