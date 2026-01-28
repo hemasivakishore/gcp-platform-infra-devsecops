@@ -1,3 +1,4 @@
+#firewall.tf
 resource "google_compute_firewall" "gke_internal" {
   name    = var.firewall_internal_name
   network = google_compute_network.vpc.name

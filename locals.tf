@@ -1,3 +1,4 @@
+# locals.tf
 locals {
     project_roles = toset([
         "roles/logging.logWriter",

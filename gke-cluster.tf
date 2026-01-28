@@ -1,3 +1,4 @@
+#gke-cluster.tf
 resource "google_container_cluster" "primary" {
   name     = var.cluster-name
   location = var.cluster-region
@@ -160,6 +161,6 @@ resource "google_logging_project_sink" "gke_sink" {
 
 resource "google_storage_bucket_iam_member" "sink_writer" {
   bucket = "gcp-platform-infra-logs"
-  role   = "roles/stroage.objectCreator"
+  role   = "roles/storage.objectCreator"
   member = google_logging_project_sink.gke_sink.writer_identity
 }
