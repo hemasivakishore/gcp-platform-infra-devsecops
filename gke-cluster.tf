@@ -51,8 +51,8 @@ resource "google_container_cluster" "primary" {
   #################################################
   # Logging & Monitoring
   #################################################
-  logging_service    = "logging.googleapis.com/kubernetes"
-  monitoring_service = "monitoring.googleapis.com/kubernetes"
+  # logging_service    = "logging.googleapis.com/kubernetes"
+  # monitoring_service = "monitoring.googleapis.com/kubernetes"
 
   release_channel {
     channel = "REGULAR"
