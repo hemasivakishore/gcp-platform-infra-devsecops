@@ -54,13 +54,6 @@ resource "google_container_cluster" "primary" {
   }
 
   #################################################
-  # Pod Security Enforcement (tfsec fix)
-  #################################################
-  pod_security_policy_config {
-    enabled = true
-  }
-
-  #################################################
   # Release Channel
   #################################################
   release_channel {

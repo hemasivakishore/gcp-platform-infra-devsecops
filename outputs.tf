@@ -97,3 +97,13 @@ output "internal_firewall_allowed_ranges" {
   description = "The IP ranges allowed by the internal GKE Firewall"
   value       = google_compute_firewall.gke_internal.source_ranges
 }
+
+
+#################################################
+# Infrastructure Security
+#################################################
+
+output "node_service_account_iam_roles" {
+  description = "The IAM roles assigned to the GKE nodes"
+  value = [for role in google_project_iam_member.sa_role_binding : role.role]
+}
