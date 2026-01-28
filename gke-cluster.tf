@@ -175,6 +175,11 @@ resource "google_logging_project_bucket_config" "gke_logs" {
   location       = "global"
   bucket_id      = "gke-observability-logs"
   retention_days = 30
+
+  timeouts {
+    create = "10m"
+    update = "10m"
+  }
 }
 
 resource "google_logging_project_sink" "gke_sink" {
