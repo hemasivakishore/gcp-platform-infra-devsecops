@@ -9,7 +9,7 @@ repos:
 - repo: https://github.com/aquasecurity/tfsec
   rev: v1.28.1
   hooks:
-    - id: tfsecs
+    - id: tfsec
 
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.24.2
