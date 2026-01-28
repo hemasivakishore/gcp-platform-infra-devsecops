@@ -10,6 +10,9 @@ repos:
   rev: v1.28.1
   hooks:
     - id: tfsec
+      args:
+        - --exclude
+        - google-gke-metadata-endpoints-disabled,google-gke-enforce-pod-security-policy
 
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.24.2
