@@ -12,6 +12,6 @@ resource "google_project_iam_member" "sa_role_binding" {
 
   project = var.project_id
   #role    = "roles/viewer" #grants the viewer role
-  role = each.key
-  member  = "serviceAccount:${google_service_account.sa.email}"
+  role   = each.key
+  member = "serviceAccount:${google_service_account.sa.email}"
 }

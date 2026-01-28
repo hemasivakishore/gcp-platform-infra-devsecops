@@ -113,8 +113,7 @@ resource "google_container_node_pool" "primary_nodes" {
     machine_type = "e2-medium"
     disk_size_gb = 20
     disk_type    = "pd-standard"
-
-    image_type = "COS_CONTAINERD"
+    image_type   = "COS_CONTAINERD"
 
     service_account = google_service_account.sa.email
 

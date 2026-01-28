@@ -77,12 +77,12 @@ output "get_credentials_command" {
 #################################################
 output "logging_bucket_id" {
   description = "The ID of the specilized GKE log bucket"
-  value = google_logging_project_bucket_config.gke_logs.id
+  value       = google_logging_project_bucket_config.gke_logs.id
 }
 
 output "logging_sink_name" {
   description = "The Service Account identity that writer logs to the destination (used for IAM Vertification)"
-  value = google_logging_project_sink.gke_sink.writer_identity
+  value       = google_logging_project_sink.gke_sink.writer_identity
 }
 
 #################################################
@@ -90,10 +90,10 @@ output "logging_sink_name" {
 #################################################
 output "internal_firewall_name" {
   description = "The name of the internal firewall rule allowing cluster communication."
-  value = google_compute_firewall.gke_internal.name
+  value       = google_compute_firewall.gke_internal.name
 }
 
 output "internal_firewall_allowed_ranges" {
   description = "The IP ranges allowed by the internal GKE Firewall"
-  value = google_compute_firewall.gke_internal.source_ranges
+  value       = google_compute_firewall.gke_internal.source_ranges
 }

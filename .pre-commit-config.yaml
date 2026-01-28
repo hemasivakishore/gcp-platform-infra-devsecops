@@ -6,6 +6,11 @@ repos:
     - id: terraform_validate
     - id: terraform_tflint
 
+- repo: https://github.com/aquasecurity/tfsec
+  rev: v1.28.1
+  hooks:
+    - id: tfsecs
+
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.24.2
   hooks:
