@@ -53,6 +53,22 @@ resource "google_container_cluster" "primary" {
   logging_service    = "logging.googleapis.com/kubernetes"
   monitoring_service = "monitoring.googleapis.com/kubernetes"
 
+  release_channel {
+    channel = "REGULAR"
+  }
+
+  monitoring_config {
+    managed_prometheus {
+      enabled = true
+    }
+  }
+
+  logging_config {
+    enable_components = [
+      "SYSTEM_COMPONENTS",
+      "WORKLOADS"
+    ]
+  }
   #################################################
   # Shielded Nodes
   #################################################
@@ -119,6 +135,31 @@ resource "google_container_node_pool" "primary_nodes" {
       temp        = "initial-pool"
     }
 
+    metadata = {
+      disable-legacy-endpoints = "true"
+    }
+
     tags = ["gke-node"]
   }
+}
+
+resource "google_logging_project_bucket_config" "gke_logs" {
+  project        = var.project_id
+  location       = "global"
+  bucket_id      = "gke-observability-logs"
+  retention_days = 30
+}
+
+resource "google_logging_project_sink" "gke_sink" {
+  name        = "gke-logs-to-gcs"
+  destination = "storage.googleapis.com/gcp-platform-infra-logs"
+  filter      = "resource.type = k8s_container"
+
+  unique_writer_identity = true
+}
+
+resource "google_storage_bucket_iam_member" "sink_writer" {
+  bucket = "gcp-platform-infra-logs"
+  role   = "roles/stroage.objectCreator"
+  member = google_logging_project_sink.gke_sink.writer_identity
 }
