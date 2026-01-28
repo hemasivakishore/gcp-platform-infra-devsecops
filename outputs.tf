@@ -105,5 +105,5 @@ output "internal_firewall_allowed_ranges" {
 
 output "node_service_account_iam_roles" {
   description = "The IAM roles assigned to the GKE nodes"
-  value = [for role in google_project_iam_member.sa_role_binding : role.role]
+  value       = [for role in google_project_iam_member.sa_role_binding : role.role]
 }
