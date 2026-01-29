@@ -11,7 +11,7 @@ on:
 jobs:
   terraform-devsecops:
     name: Terraform DevSecOps
-    runs-on: [self-hosted, macbook]
+    runs-on: [self-hosted]
 
     env:
       GOOGLE_PROJECT: project-1e2da3fc-bb97-4b70-9c0
