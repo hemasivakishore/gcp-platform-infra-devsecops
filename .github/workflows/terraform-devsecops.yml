@@ -8,7 +8,7 @@ on:
 jobs:
     terraform-devsecops:
         name: Terraform DevSecOps Scan and Apply
-        runs-on: [self-hosted, macbook]
+        runs-on: [self-hosted]
 
         env:
             TF_IN_AUTOMATION: "true"
