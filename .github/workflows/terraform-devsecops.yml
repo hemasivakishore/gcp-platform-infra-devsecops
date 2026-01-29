@@ -1,47 +1,102 @@
-name: Terraform DevSecOps Pipeline
+name: GCP Terraform DevSecOps Pipeline
 
 on:
-    push:
-        branches:
-            - feat/github-actions-cicd
+  push:
+    branches:
+      - feat/github-actions-cicd
+  pull_request:
+    branches:
+      - main
 
 jobs:
-    terraform-devsecops:
-        name: Terraform DevSecOps Scan and Apply
-        runs-on: [self-hosted]
-        permissions:
-            contents: read
+  terraform-devsecops:
+    name: Terraform DevSecOps
+    runs-on: [self-hosted, macbook]
 
-        env:
-            TF_IN_AUTOMATION: "true"
-            TF_INPUT: "false"
-        
-        steps:
-            - name: Checkout Repository
-              uses: actions/checkout@v4
+    env:
+      GOOGLE_PROJECT: project-1e2da3fc-bb97-4b70-9c0
+      GOOGLE_REGION: us-east1
+      TF_IN_AUTOMATION: true
 
-            - name: Setup Terraform
-              uses: hashicorp/setup-terraform@v3
-              with:
-                terraform_version: 1.12.2
-                
-            - name: Terraform Init
-              run: terraform init
+    steps:
+    # ----------------------------
+    # Checkout Source
+    # ----------------------------
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-            - name: Terraform Format Cehck
-              run: terraform fmt -check -recursive
+    # ----------------------------
+    # Setup Terraform
+    # ----------------------------
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.12.2
 
-            - name: Terraform Validate
-              run: terraform validate
-            
-            - name: TFLINT Scan
-              run: tflint
-            
-            - name: tfsec Scan
-              run: tfsec .
+    # ----------------------------
+    # Setup Google Credentials
+    # ----------------------------
+    - name: Configure GCP Credentials
+      run: |
+        echo "${{ secrets.GCP_SA_KEY }}" > sa.json
+        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/sa.json"
 
-            - name: Pre-Commit Scan
-              run: pre-commit run --all-files
-            
-            - name: Terraform Plan
-              run: terraform plan
+    # ----------------------------
+    # Terraform Init
+    # ----------------------------
+    - name: Terraform Init
+      run: terraform init
+
+    # ----------------------------
+    # Terraform Format
+    # ----------------------------
+    - name: Terraform Format
+      run: terraform fmt -recursive
+
+    # ----------------------------
+    # Terraform Validate
+    # ----------------------------
+    - name: Terraform Validate
+      run: terraform validate
+
+    # ----------------------------
+    # Install TFLint
+    # ----------------------------
+    - name: Install TFLint
+      run: |
+        curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+    - name: Run TFLint
+      run: tflint
+
+    # ----------------------------
+    # Install tfsec
+    # ----------------------------
+    - name: Install tfsec
+      run: |
+        curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+    - name: Run tfsec
+      run: tfsec .
+
+    # ----------------------------
+    # Install Pre-Commit
+    # ----------------------------
+    - name: Install pre-commit
+      run: pip3 install pre-commit
+
+    - name: Run pre-commit
+      run: pre-commit run --all-files
+
+    # ----------------------------
+    # Terraform Plan
+    # ----------------------------
+    - name: Terraform Plan
+      run: terraform plan
+
+    # ----------------------------
+    # Terraform Apply
+    # ----------------------------
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: terraform apply -auto-approve
