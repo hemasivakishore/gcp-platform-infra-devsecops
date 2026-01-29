@@ -1,0 +1,45 @@
+name: Terraform DevSecOps Pipeline
+
+on:
+    push:
+        branches:
+            - feat/github-actions-cicd
+
+jobs:
+    terraform-devsecops:
+        name: Terraform DevSecOps Scan and Apply
+        runs-on: [self-hosted, macbook]
+
+        env:
+            TF_IN_AUTOMATION: "true"
+            TF_INPUT: "false"
+        
+        steps:
+            - name: Checkout Repository
+              uses: action/checkout@v4
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                terraform_version: 1.12.2
+                
+            - name: Terraform Init
+              run: terraform init
+
+            - name: Terraform Format Cehck
+              run: terraform fmt -check -recursive
+
+            - name: Terraform Validate
+              run: terraform validate
+            
+            - name: TFLINT Scan
+              run: tflint
+            
+            - name: tfsec Scan
+              run: tfsec .
+
+            - name: Pre-Commit Scan
+              run: pre-commit run --all-files
+            
+            - name: Terraform Plan
+              run: terraform plan
