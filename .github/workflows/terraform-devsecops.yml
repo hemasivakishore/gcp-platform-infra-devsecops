@@ -3,7 +3,7 @@ name: GCP Terraform DevSecOps Pipeline
 on:
   push:
     branches:
-      - feat/github-actions-cicd
+      - main
   pull_request:
     branches:
       - main
