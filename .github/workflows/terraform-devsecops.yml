@@ -34,6 +34,13 @@ jobs:
         terraform_version: 1.12.2
 
     # ----------------------------
+    # Debugging
+    # ----------------------------
+    - name: Debugging
+      run:
+        whoami
+
+    # ----------------------------
     # Setup Google Credentials
     # ----------------------------
     - name: Configure GCP Credentials
