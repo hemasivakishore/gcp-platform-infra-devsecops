@@ -39,6 +39,7 @@ jobs:
     - name: Debugging
       run:
         whoami
+        pwd
 
     # ----------------------------
     # Setup Google Credentials
