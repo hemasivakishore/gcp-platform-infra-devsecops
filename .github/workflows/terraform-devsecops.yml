@@ -131,15 +131,23 @@ jobs:
     # Jira Incident (Apply Failure ONLY)
     # ----------------------------
     - name: Create Jira Incident
-      if: env.APPLY_EXIT_CODE != '0' && github.event_name == 'push'
+      if: failure() && github.event_name == 'push'
       run: |
+        if [ "$APPLY_RAN" = "true" ]; then
+          SUMMARY="Terraform Apply Failed - $ENVIRONMENT"
+          DESCRIPTION="Terraform apply failed. Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        else
+          SUMMARY="Terraform Pipeline Failed Before Apply - $ENVIRONMENT"
+          DESCRIPTION="Pipeline failed before terraform apply. Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        fi
+    
         curl -X POST \
           -H "Content-Type: application/json" \
           -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}" \
           --data '{
             "fields": {
               "project": { "key": "'"${{ secrets.JIRA_PROJECT_KEY }}"'" },
-              "summary": "Terraform Apply Failed - '"$ENVIRONMENT"'",
+              "summary": "'"$SUMMARY"'",
               "issuetype": { "name": "Incident" },
               "priority": { "name": "High" },
               "description": {
@@ -149,13 +157,14 @@ jobs:
                   "type":"paragraph",
                   "content":[{
                     "type":"text",
-                    "text":"Terraform apply failed. Logs: '"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"'"
+                    "text":"'"$DESCRIPTION"'"
                   }]
                 }]
               }
             }
           }' \
           "${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue"
+
 
     # ----------------------------
     # Rollback Notification
