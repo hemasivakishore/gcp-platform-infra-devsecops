@@ -1,0 +1,217 @@
+name: GCP Terraform DevSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - feat/github-actions-cicd
+      - stage
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform-devsecops:
+    name: Terraform DevSecOps
+    runs-on: [self-hosted]
+
+    env:
+      GOOGLE_PROJECT: project-1e2da3fc-bb97-4b70-9c0
+      GOOGLE_REGION: us-east1
+      TF_IN_AUTOMATION: true
+
+    steps:
+    # ----------------------------
+    # Checkout
+    # ----------------------------
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    # ----------------------------
+    # Setup Terraform
+    # ----------------------------
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.12.2
+
+    # ----------------------------
+    # Set Environment (dev/stage/prod)
+    # ----------------------------
+    - name: Set Environment
+      run: |
+        if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+          echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+        elif [[ "${GITHUB_REF_NAME}" == "stage" ]]; then
+          echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+        else
+          echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+        fi
+
+    # ----------------------------
+    # Authenticate to GCP
+    # ----------------------------
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    # ----------------------------
+    # Terraform Init / Validate
+    # ----------------------------
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Format
+      run: terraform fmt -recursive
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Run TFLint
+      run: tflint
+
+    - name: Run tfsec
+      run: tfsec .
+
+    - name: Run pre-commit
+      run: pre-commit run --all-files
+
+    # ============================
+    # Terraform PLAN
+    # ============================
+    - name: Slack Notify Plan Start
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"#439FE0",
+            "title":"Terraform Plan Started",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Branch","value":"'"${{ github.ref_name }}"'","short":true},
+              {"title":"Actor","value":"'"${{ github.actor }}"'","short":true}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Terraform Plan
+      run: terraform plan
+
+    - name: Slack Notify Plan Result
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          COLOR="good"
+          TITLE="Terraform Plan Succeeded ✅"
+        else
+          COLOR="danger"
+          TITLE="Terraform Plan Failed ❌"
+        fi
+
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"'"$COLOR"'",
+            "title":"'"$TITLE"'",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Logs","value":"'"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"'","short":false}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    # ============================
+    # Terraform APPLY (dev branch)
+    # ============================
+    - name: Slack Notify Apply Start
+      if: github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"#FFA500",
+            "title":"Terraform Apply Started 🚀",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Branch","value":"'"${{ github.ref_name }}"'","short":true}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: terraform apply -auto-approve
+
+    # ============================
+    # APPLY RESULT (ALWAYS RUN)
+    # ============================
+    - name: Slack Notify Apply Result
+      if: always() && github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          COLOR="good"
+          TITLE="Terraform Apply Succeeded 🎉"
+        else
+          COLOR="danger"
+          TITLE="Terraform Apply Failed 🚨"
+        fi
+
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"'"$COLOR"'",
+            "title":"'"$TITLE"'",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Triggered By","value":"'"${{ github.actor }}"'","short":true},
+              {"title":"Logs","value":"'"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"'","short":false}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    # ============================
+    # Jira Incident + Rollback Alert
+    # ============================
+    - name: Create Jira Incident on Apply Failure
+      if: failure() && github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}" \
+          --data '{
+            "fields": {
+              "project": { "key": "'"${{ secrets.JIRA_PROJECT_KEY }}"'" },
+              "summary": "Terraform Apply Failed - '"$ENVIRONMENT"'",
+              "issuetype": { "name": "Incident" },
+              "priority": { "name": "High" },
+              "description": {
+                "type": "doc",
+                "version": 1,
+                "content": [{
+                  "type": "paragraph",
+                  "content": [{
+                    "type": "text",
+                    "text": "Terraform apply failed. Run: '"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"'"
+                  }]
+                }]
+              }
+            }
+          }' \
+          "${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue"
+
+    - name: Slack Notify Rollback Required
+      if: failure() && github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"danger",
+            "title":"🚨 Rollback Required",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Action","value":"Investigate or rollback manually","short":false},
+              {"title":"Logs","value":"'"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"'","short":false}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
