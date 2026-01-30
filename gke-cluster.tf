@@ -173,7 +173,7 @@ resource "google_container_node_pool" "primary_nodes" {
 resource "google_logging_project_bucket_config" "gke_logs" {
   project        = var.project_id
   location       = "global"
-  bucket_id      = "gke-log-storage"
+  bucket_id      = "gke-log-monitor-storage"
   retention_days = 30
 }
 
