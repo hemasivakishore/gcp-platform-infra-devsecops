@@ -127,10 +127,7 @@ jobs:
           }]
         }' ${{ secrets.SLACK_WEBHOOK_URL }}
 
-    # ----------------------------
-    # Jira Incident (Apply Failure ONLY)
-    # ----------------------------
-    - name: Create Jira Incident
+    - name: Create Jira Ticket
       if: failure() && github.event_name == 'push'
       run: |
         if [ "$APPLY_RAN" = "true" ]; then
@@ -148,7 +145,7 @@ jobs:
             "fields": {
               "project": { "key": "'"${{ secrets.JIRA_PROJECT_KEY }}"'" },
               "summary": "'"$SUMMARY"'",
-              "issuetype": { "name": "Incident" },
+              "issuetype": { "name": "Bug" },
               "priority": { "name": "High" },
               "description": {
                 "type": "doc",
