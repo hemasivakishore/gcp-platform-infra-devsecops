@@ -1,0 +1,19 @@
+repos:
+- repo: https://github.com/antonbabenko/pre-commit-terraform
+  rev: v1.86.0
+  hooks:
+    - id: terraform_fmt
+    - id: terraform_validate
+    - id: terraform_tflint
+
+- repo: https://github.com/aquasecurity/tfsec
+  rev: v1.28.1
+  hooks:
+    - id: tfsec
+      args:
+        - --exclude=google-gke-metadata-endpoints-disabled,google-gke-enforce-pod-security-policy
+
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.24.2
+  hooks:
+    - id: gitleaks
