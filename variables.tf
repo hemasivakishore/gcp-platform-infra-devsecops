@@ -1,3 +1,4 @@
+#vpc.tf
 variable "project_id" {
   type    = string
   default = "project-1e2da3fc-bb97-4b70-9c0"
@@ -5,7 +6,12 @@ variable "project_id" {
 
 variable "region" {
   type    = string
-  default = "us-east1"
+  default = "us-east1-b"
+}
+
+variable "cluster-region" {
+  type    = string
+  default = "us-east1-b"
 }
 
 variable "vpc_name" {
@@ -32,3 +38,19 @@ variable "router-name" {
   type    = string
   default = "gke-route"
 }
+
+variable "firewall_internal_name" {
+  type    = string
+  default = "gke-allow-internal"
+}
+
+variable "cluster-name" {
+  type    = string
+  default = "prod-gke-cluster"
+}
+
+variable "nodes-name" {
+  type    = string
+  default = "prod-node-pool"
+}
+
