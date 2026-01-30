@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feat/github-actions-cicd
+      - stage
+      - main
   pull_request:
     branches:
       - main
@@ -20,7 +22,7 @@ jobs:
 
     steps:
     # ----------------------------
-    # Checkout Source
+    # Checkout
     # ----------------------------
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -34,26 +36,25 @@ jobs:
         terraform_version: 1.12.2
 
     # ----------------------------
-    # Debugging
+    # Set Environment (dev/stage/prod)
     # ----------------------------
-    - name: Debugging
+    - name: Set Environment
       run: |
-        whoami
-        pwd
+        if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+          echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+        elif [[ "${GITHUB_REF_NAME}" == "stage" ]]; then
+          echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+        else
+          echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+        fi
 
     # ----------------------------
-    # Setup Google Credentials
+    # Authenticate to GCP
     # ----------------------------
-    - name: Configure GCP Credentials
-      run: |
-        echo "${{ secrets.GCP_SA_KEY }}" > sa.json
-        echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/sa.json" >> $GITHUB_ENV
-
     - name: Authenticate to GCP
       uses: google-github-actions/auth@v2
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
-
 
     # ----------------------------
     # Terraform Init
@@ -74,32 +75,109 @@ jobs:
       run: terraform validate
 
     # ----------------------------
-    # Run TFLint
+    # TFLint
     # ----------------------------
     - name: Run TFLint
       run: tflint
 
     # ----------------------------
-    # Run tfsec
+    # tfsec
     # ----------------------------
     - name: Run tfsec
       run: tfsec .
 
     # ----------------------------
-    # Install Pre-Commit
+    # Pre-Commit
     # ----------------------------
     - name: Run pre-commit
       run: pre-commit run --all-files
 
-    # ----------------------------
-    # Terraform Plan
-    # ----------------------------
+    # ============================
+    # Terraform PLAN
+    # ============================
+    - name: Slack Notify Plan Start
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"#439FE0",
+            "title":"Terraform Plan Started",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Branch","value":"'"${{ github.ref_name }}"'","short":true},
+              {"title":"Actor","value":"'"${{ github.actor }}"'","short":true}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
     - name: Terraform Plan
       run: terraform plan
 
-    # ----------------------------
-    # Terraform Apply
-    # ----------------------------
+    - name: Slack Notify Plan Result
+      if: always()
+      run: |
+        STATUS="${{ job.status }}"
+        COLOR="good"
+        TITLE="Terraform Plan Succeeded ✅"
+        if [ "$STATUS" != "success" ]; then
+          COLOR="danger"
+          TITLE="Terraform Plan Failed ❌"
+        fi
+
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"'"$COLOR"'",
+            "title":"'"$TITLE"'",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Logs","value":"'"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"'","short":false}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    # ============================
+    # Terraform APPLY (dev only)
+    # ============================
+    - name: Slack Notify Apply Start
+      if: github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"#FFA500",
+            "title":"Terraform Apply Started 🚀",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Branch","value":"'"${{ github.ref_name }}"'","short":true}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
     - name: Terraform Apply
       if: github.ref == 'refs/heads/feat/github-actions-cicd'
       run: terraform apply -auto-approve
+
+    - name: Slack Notify Apply Result
+      if: github.ref == 'refs/heads/feat/github-actions-cicd'
+      run: |
+        STATUS="${{ job.status }}"
+        COLOR="good"
+        TITLE="Terraform Apply Succeeded 🎉"
+        if [ "$STATUS" != "success" ]; then
+          COLOR="danger"
+          TITLE="Terraform Apply Failed 🚨"
+        fi
+
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "attachments":[{
+            "color":"'"$COLOR"'",
+            "title":"'"$TITLE"'",
+            "fields":[
+              {"title":"Environment","value":"'"$ENVIRONMENT"'","short":true},
+              {"title":"Triggered By","value":"'"${{ github.actor }}"'","short":true},
+              {"title":"Logs","value":"'"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"'","short":false}
+            ]
+          }]
+        }' ${{ secrets.SLACK_WEBHOOK_URL }}
