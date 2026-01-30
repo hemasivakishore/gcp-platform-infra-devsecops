@@ -37,7 +37,7 @@ jobs:
     # Debugging
     # ----------------------------
     - name: Debugging
-      run:
+      run: |
         whoami
         pwd
 
