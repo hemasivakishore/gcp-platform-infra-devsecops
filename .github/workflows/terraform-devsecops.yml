@@ -24,9 +24,6 @@ jobs:
     # ----------------------------
     - name: Checkout Repository
       uses: actions/checkout@v4
-      shell: bash
-      run: |
-            echo "Cloned Repository"
 
     # ----------------------------
     # Setup Terraform
