@@ -1,3 +1,4 @@
+# route-nat.tf
 resource "google_compute_router" "gke-router" {
   name    = "${var.router-name}-${google_compute_subnetwork.subnet-1.region}"
   region  = google_compute_subnetwork.subnet-1.region

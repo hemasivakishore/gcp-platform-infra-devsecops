@@ -1,3 +1,4 @@
+#outputs.tf
 #################################################
 # GKE Cluster Outputs
 #################################################
@@ -69,4 +70,40 @@ output "workload_identity_pool" {
 output "get_credentials_command" {
   description = "Command to configure kubectl to connect to this cluster."
   value       = "gcloud container clusters get-credentials ${google_container_cluster.primary.name} --zone ${google_container_cluster.primary.location} --project ${var.project_id}"
+}
+
+#################################################
+# Observability and Logging Outputs
+#################################################
+output "logging_bucket_id" {
+  description = "The ID of the specilized GKE log bucket"
+  value       = google_logging_project_bucket_config.gke_logs.id
+}
+
+output "logging_sink_name" {
+  description = "The Service Account identity that writer logs to the destination (used for IAM Vertification)"
+  value       = google_logging_project_sink.gke_sink.writer_identity
+}
+
+#################################################
+# Firewall and Security Outputs
+#################################################
+output "internal_firewall_name" {
+  description = "The name of the internal firewall rule allowing cluster communication."
+  value       = google_compute_firewall.gke_internal.name
+}
+
+output "internal_firewall_allowed_ranges" {
+  description = "The IP ranges allowed by the internal GKE Firewall"
+  value       = google_compute_firewall.gke_internal.source_ranges
+}
+
+
+#################################################
+# Infrastructure Security
+#################################################
+
+output "node_service_account_iam_roles" {
+  description = "The IAM roles assigned to the GKE nodes"
+  value       = [for role in google_project_iam_member.sa_role_binding : role.role]
 }

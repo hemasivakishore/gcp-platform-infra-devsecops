@@ -1,8 +1,11 @@
+#############################################
+# GKE CLUSTER (PRODUCTION GRADE)
+#############################################
+
 resource "google_container_cluster" "primary" {
   name     = var.cluster-name
   location = var.cluster-region
 
-  # enable_autopilot = false
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet-1.name
 
@@ -12,7 +15,7 @@ resource "google_container_cluster" "primary" {
   deletion_protection = false
 
   #################################################
-  # Cluster Labels (Asset Management)
+  # Labels
   #################################################
   resource_labels = {
     environment = "production"
@@ -20,15 +23,8 @@ resource "google_container_cluster" "primary" {
     project     = "gcp-platform"
   }
 
-  master_authorized_networks_config {
-    cidr_blocks {
-      cidr_block   = "10.0.0.0/16"
-      display_name = "internal-vpc"
-    }
-  }
-
   #################################################
-  # Private Cluster (No Public Control Plane)
+  # Private Cluster
   #################################################
   private_cluster_config {
     enable_private_nodes    = true
@@ -37,7 +33,17 @@ resource "google_container_cluster" "primary" {
   }
 
   #################################################
-  # Networking & Security Defaults
+  # Authorized Control Plane Access
+  #################################################
+  master_authorized_networks_config {
+    cidr_blocks {
+      cidr_block   = "10.0.0.0/16"
+      display_name = "internal-vpc"
+    }
+  }
+
+  #################################################
+  # Networking
   #################################################
   networking_mode = "VPC_NATIVE"
 
@@ -48,18 +54,35 @@ resource "google_container_cluster" "primary" {
   }
 
   #################################################
-  # Logging & Monitoring
+  # Release Channel
   #################################################
-  logging_service    = "logging.googleapis.com/kubernetes"
-  monitoring_service = "monitoring.googleapis.com/kubernetes"
+  release_channel {
+    channel = "REGULAR"
+  }
 
   #################################################
-  # Shielded Nodes
+  # Observability
+  #################################################
+  monitoring_config {
+    managed_prometheus {
+      enabled = true
+    }
+  }
+
+  logging_config {
+    enable_components = [
+      "SYSTEM_COMPONENTS",
+      "WORKLOADS"
+    ]
+  }
+
+  #################################################
+  # Shielded Control Plane
   #################################################
   enable_shielded_nodes = true
 
   #################################################
-  # Master Auth (Disable Basic Auth & Client Cert)
+  # Authentication Hardening
   #################################################
   master_auth {
     client_certificate_config {
@@ -68,12 +91,16 @@ resource "google_container_cluster" "primary" {
   }
 
   #################################################
-  # Master Auth (Disable Basic Auth & Client Cert)
+  # Workload Identity
   #################################################
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 }
+
+#############################################
+# NODE POOL
+#############################################
 
 resource "google_container_node_pool" "primary_nodes" {
   name     = var.nodes-name
@@ -93,32 +120,73 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   node_config {
+
     machine_type = "e2-medium"
     disk_size_gb = 20
     disk_type    = "pd-standard"
+    image_type   = "COS_CONTAINERD"
 
-    image_type = "COS_CONTAINERD"
-
+    #################################################
+    # Service Account
+    #################################################
     service_account = google_service_account.sa.email
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
 
+    #################################################
+    # Metadata Server v2 (tfsec fix)
+    #################################################
+    metadata = {
+      disable-legacy-endpoints = "true"
+    }
+
     workload_metadata_config {
       mode = "GKE_METADATA"
     }
 
+    #################################################
+    # Shielded VM
+    #################################################
     shielded_instance_config {
       enable_secure_boot          = true
       enable_integrity_monitoring = true
     }
 
+    #################################################
+    # Labels & Tags
+    #################################################
     labels = {
       environment = "production"
-      temp        = "initial-pool"
+      pool        = "primary"
     }
 
     tags = ["gke-node"]
   }
+}
+
+#############################################
+# CENTRALIZED LOGGING
+#############################################
+
+resource "google_logging_project_bucket_config" "gke_logs" {
+  project        = var.project_id
+  location       = "global"
+  bucket_id      = "gke-logs-storage"
+  retention_days = 30
+}
+
+resource "google_logging_project_sink" "gke_sink" {
+  name        = "gke-logs-to-gcs"
+  destination = "storage.googleapis.com/gcp-platform-infra-logs"
+  filter      = "resource.type = k8s_container"
+
+  unique_writer_identity = true
+}
+
+resource "google_storage_bucket_iam_member" "sink_writer" {
+  bucket = "gcp-platform-infra-logs"
+  role   = "roles/storage.objectCreator"
+  member = google_logging_project_sink.gke_sink.writer_identity
 }
