@@ -73,31 +73,20 @@ jobs:
       run: terraform validate
 
     # ----------------------------
-    # Install TFLint
+    # Run TFLint
     # ----------------------------
-    - name: Install TFLint
-      run: |
-        curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-
     - name: Run TFLint
       run: tflint
 
     # ----------------------------
-    # Install tfsec
+    # Run tfsec
     # ----------------------------
-    - name: Install tfsec
-      run: |
-        curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-
     - name: Run tfsec
       run: tfsec .
 
     # ----------------------------
     # Install Pre-Commit
     # ----------------------------
-    - name: Install pre-commit
-      run: pip3 install pre-commit
-
     - name: Run pre-commit
       run: pre-commit run --all-files
 
